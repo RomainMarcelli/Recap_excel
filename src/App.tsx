@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Recap from "./pages/Recap";
 import Projet from "./pages/Projet"; // ✅ Import de la page Projet
+import Collaborateurs from "./pages/Collaborateurs";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/recap" element={<Recap />} />
         <Route path="/projet" element={<Projet />} /> {/* ✅ Route ajoutée */}
+        <Route path="/collaborateurs" element={<Collaborateurs />} /> {/* ✅ Route ajoutée */}
       </Routes>
     </Router>
   );
