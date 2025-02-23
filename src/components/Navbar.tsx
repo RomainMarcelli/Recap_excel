@@ -12,6 +12,9 @@ function Navbar() {
           <li>
             <Link to="/recap" className="text-white hover:text-gray-300">Récapitulatif</Link>
           </li>
+          <li>
+            <Link to="/projet" className="text-white hover:text-gray-300">Créer un Projet</Link>
+          </li>
         </ul>
       </div>
     </nav>
