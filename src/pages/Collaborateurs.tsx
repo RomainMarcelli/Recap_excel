@@ -10,6 +10,7 @@ interface Project {
 interface Collaborator {
     _id: string;
     name: string;
+    totalDaysWorked: number; // ✅ Ce champ doit exister
     projects: {
         projectId: Project;
         daysWorked: number;
@@ -33,9 +34,18 @@ function Collaborateurs() {
 
     const fetchCollaborators = async () => {
         const response = await fetch("http://localhost:5000/collaborators");
-        const data = await response.json();
-        setCollaborators(data);
+        const data: Collaborator[] = await response.json(); // ✅ Ajout du type explicite
+    
+        setCollaborators(data.map((collab: Collaborator) => ({
+            ...collab,
+            projects: collab.projects.map((p: { projectId: Project; daysWorked: number }) => ({ 
+                projectId: p.projectId, // ✅ Correction pour éviter les erreurs d'affichage
+                daysWorked: p.daysWorked ?? 0,
+            })),
+            totalDaysWorked: collab.totalDaysWorked ?? 0, // ✅ S'assurer que ce champ existe
+        })));
     };
+    
 
     const fetchProjects = async () => {
         const response = await fetch("http://localhost:5000/projects");
@@ -72,7 +82,7 @@ function Collaborateurs() {
     const startEditing = (collab: Collaborator) => {
         setEditingCollaborator(collab._id);
         setUpdatedName(collab.name);
-        setUpdatedProjects(collab.projects.map((p) => p.projectId._id)); // ✅ Utiliser `projectId._id`
+        setUpdatedProjects(collab.projects.map((p) => p.projectId?._id || "")); // ✅ Vérification si `projectId` est défini
     };
 
     const cancelEditing = () => {
@@ -94,9 +104,18 @@ function Collaborateurs() {
         setShowOnlyCollaborators(!showOnlyCollaborators);
     };
 
-    const handleAddDays = (collaboratorId: string, projectId: string | null, days: number) => {
-        console.log(`Ajout de ${days} jours pour ${collaboratorId} ${projectId ? `dans le projet ${projectId}` : "en total"}`);
-        // Ici, tu peux appeler une API pour sauvegarder les jours travaillés
+    const handleAddDays = async (collaboratorId: string, projectId: string | null, days: number) => {
+        if (!collaboratorId || days <= 0) return;
+
+        const response = await fetch(`http://localhost:5000/collaborators/${collaboratorId}/add-days`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId, days }),
+        });
+
+        if (response.ok) {
+            fetchCollaborators(); // ✅ Mettre à jour l'affichage après l'ajout des jours
+        }
     };
 
     return (
@@ -111,13 +130,17 @@ function Collaborateurs() {
 
             {/* Affichage uniquement de la liste des collaborateurs */}
             {showOnlyCollaborators ? (
-                <CollaboratorList
-                    collaborators={collaborators.map((collab) => ({
-                        ...collab,
-                        projects: collab.projects.map((p) => p.projectId), // ✅ Extraction correcte
-                    }))}
-                    onAddDays={handleAddDays}
-                />
+               <CollaboratorList
+               collaborators={collaborators.map((collab) => ({
+                 ...collab,
+                 projects: collab.projects.map((p) => ({
+                   projectId: p.projectId, // ✅ Correction : garder `projectId`
+                   daysWorked: p.daysWorked ?? 0, // ✅ Ajouter `daysWorked`
+                 })),
+                 totalDaysWorked: collab.totalDaysWorked ?? 0,
+               }))} 
+               onAddDays={handleAddDays}
+             />             
             ) : (
                 <>
                     {/* Formulaire d'ajout */}
@@ -238,17 +261,17 @@ function Collaborateurs() {
                                                     {collab.projects.length > 0 ? (
                                                         collab.projects.map((project) => (
                                                             <span
-                                                                key={project.projectId?._id}
+                                                                key={project.projectId?._id || Math.random()} // ✅ Ajout d’une `key` de secours
                                                                 className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full"
                                                             >
-                                                                {project.projectId?.name || "Projet inconnu"}
+                                                                {project.projectId?.name || "Projet inconnu"} - {project.daysWorked ?? 0} jours
                                                             </span>
-
                                                         ))
                                                     ) : (
                                                         <span className="text-gray-500 text-sm">Aucun projet attribué</span>
                                                     )}
                                                 </div>
+
 
                                             </>
                                         )}

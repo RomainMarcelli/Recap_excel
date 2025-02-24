@@ -5,14 +5,13 @@ import { Project } from "../models/projectsModel";
 // Récupérer tous les collaborateurs avec leurs projets
 export const getCollaborators = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const collaborators = await Collaborator.find().populate("projects.projectId");
-        res.status(200).json(collaborators);
+      const collaborators = await Collaborator.find().populate("projects.projectId"); // ✅ Peupler `projectId`
+      res.status(200).json(collaborators);
     } catch (error) {
-        console.error("Erreur lors de la récupération des collaborateurs :", error);
-        next(error);
+      console.error("Erreur lors de la récupération des collaborateurs :", error);
+      next(error);
     }
-};
-
+  };  
 
 // Ajouter un collaborateur
 export const addCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
