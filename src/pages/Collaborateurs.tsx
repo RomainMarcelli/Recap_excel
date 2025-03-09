@@ -26,43 +26,31 @@ function Collaborateurs() {
     const [updatedName, setUpdatedName] = useState("");
     const [updatedProjects, setUpdatedProjects] = useState<string[]>([]);
     const [showOnlyCollaborators, setShowOnlyCollaborators] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7)); 
+    const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7));
     const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
-
-    const months = [
-        { value: "01", label: "Janvier" },
-        { value: "02", label: "Février" },
-        { value: "03", label: "Mars" },
-        { value: "04", label: "Avril" },
-        { value: "05", label: "Mai" },
-        { value: "06", label: "Juin" },
-        { value: "07", label: "Juillet" },
-        { value: "08", label: "Août" },
-        { value: "09", label: "Septembre" },
-        { value: "10", label: "Octobre" },
-        { value: "11", label: "Novembre" },
-        { value: "12", label: "Décembre" },
-      ];
 
     useEffect(() => {
         fetchCollaborators();
         fetchProjects();
     }, []);
 
-    const fetchCollaborators = async () => {
-        const response = await fetch(`http://localhost:5000/collaborators?month=${selectedMonth}&year=${currentYear}`);
-        const data: Collaborator[] = await response.json(); 
-    
-        setCollaborators(data.map((collab: Collaborator) => ({
-            ...collab,
-            projects: collab.projects.map((p: { projectId: Project; daysWorked: number }) => ({
-                projectId: p.projectId, 
-                daysWorked: p.daysWorked ?? 0,
-            })),
-            totalDaysWorked: collab.projects.reduce((total, p) => total + (p.daysWorked ?? 0), 0), // ✅ Correction ici
-        })));
+    const fetchCollaborators = async (month = selectedMonth, year = currentYear) => {
+        try {
+            const response = await fetch(`http://localhost:5000/collaborators?month=${month}&year=${year}`);
+            if (!response.ok) throw new Error("Erreur lors de la récupération des collaborateurs");
+
+            const data = await response.json();
+            setCollaborators(data);
+        } catch (error) {
+            console.error("Erreur lors du chargement des collaborateurs :", error);
+        }
     };
-    
+
+    // Charger les collaborateurs au démarrage
+    useEffect(() => {
+        fetchCollaborators();
+    }, []);
+
 
 
     const fetchProjects = async () => {
@@ -73,7 +61,7 @@ function Collaborateurs() {
 
     const addCollaborator = async () => {
         const formattedProjects = selectedProjects.map((id) => id); // 🔥 On envoie uniquement des strings
-    
+
         const response = await fetch("http://localhost:5000/collaborators", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -84,14 +72,14 @@ function Collaborateurs() {
                 year: currentYear,
             }),
         });
-    
+
         if (response.ok) {
             fetchCollaborators();
             setName("");
             setSelectedProjects([]);
         }
     };
-    
+
     const deleteCollaborator = async (id: string) => {
         await fetch(`http://localhost:5000/collaborators/${id}`, { method: "DELETE" });
         fetchCollaborators();
@@ -118,18 +106,18 @@ function Collaborateurs() {
         await fetch(`http://localhost:5000/collaborators/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                name: updatedName, 
+            body: JSON.stringify({
+                name: updatedName,
                 projects: updatedProjects,
                 month: selectedMonth,  // ✅ Ajout du mois sélectionné
                 year: currentYear,      // ✅ Ajout de l'année sélectionnée
             }),
         });
-    
+
         setEditingCollaborator(null);
         fetchCollaborators();
     };
-    
+
 
     const toggleShowCollaborators = () => {
         setShowOnlyCollaborators(!showOnlyCollaborators);
@@ -158,7 +146,7 @@ function Collaborateurs() {
             >
                 {showOnlyCollaborators ? "Revenir à l'affichage normal" : "Nombre de jours travaillés"}
             </button>
-            <div className="mb-4">
+            {/* <div className="mb-4">
                 <label className="block text-gray-700 mb-2">Sélectionner un mois :</label>
                 <select
                     value={selectedMonth}
@@ -171,7 +159,7 @@ function Collaborateurs() {
                         </option>
                     ))}
                 </select>
-            </div>
+            </div> */}
 
             {/* Affichage uniquement de la liste des collaborateurs */}
             {showOnlyCollaborators ? (
@@ -184,7 +172,11 @@ function Collaborateurs() {
                         })),
                         totalDaysWorked: collab.totalDaysWorked ?? 0,
                     }))}
-                    onAddDays={handleAddDays}
+                        fetchCollaborators={fetchCollaborators}
+                    selectedMonth={selectedMonth}
+                    setSelectedMonth={setSelectedMonth}
+                    currentYear={currentYear}
+                    setCurrentYear={setCurrentYear}
                 />
             ) : (
                 <>
