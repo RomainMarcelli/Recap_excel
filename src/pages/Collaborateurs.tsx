@@ -30,28 +30,32 @@ function Collaborateurs() {
     const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
 
     useEffect(() => {
-        fetchCollaborators();
+        fetchCollaborators(selectedMonth, currentYear);
         fetchProjects();
-    }, []);
+    }, [selectedMonth, currentYear]);
 
     const fetchCollaborators = async (month = selectedMonth, year = currentYear) => {
         try {
             const response = await fetch(`http://localhost:5000/collaborators?month=${month}&year=${year}`);
             if (!response.ok) throw new Error("Erreur lors de la récupération des collaborateurs");
-
+    
             const data = await response.json();
-            setCollaborators(data);
+    
+            // ✅ Transformation des données pour bien récupérer les jours travaillés du bon mois
+            const updatedCollaborators = data.map((collab: Collaborator) => ({
+                ...collab,
+                projects: collab.projects.map((p) => ({
+                    ...p,
+                    daysWorked: p.daysWorked ?? 0, // ✅ Ajoute une valeur par défaut si `daysWorked` est null
+                })),
+                totalDaysWorked: collab.projects.reduce((total, p) => total + (p.daysWorked ?? 0), 0), // ✅ Calcule correctement le total
+            }));
+    
+            setCollaborators(updatedCollaborators);
         } catch (error) {
             console.error("Erreur lors du chargement des collaborateurs :", error);
         }
-    };
-
-    // Charger les collaborateurs au démarrage
-    useEffect(() => {
-        fetchCollaborators();
-    }, []);
-
-
+    };    
 
     const fetchProjects = async () => {
         const response = await fetch("http://localhost:5000/projects");
@@ -74,7 +78,7 @@ function Collaborateurs() {
         });
 
         if (response.ok) {
-            fetchCollaborators();
+            fetchCollaborators(selectedMonth, currentYear); // ✅ Met à jour la liste avec le bon mois
             setName("");
             setSelectedProjects([]);
         }
@@ -82,15 +86,8 @@ function Collaborateurs() {
 
     const deleteCollaborator = async (id: string) => {
         await fetch(`http://localhost:5000/collaborators/${id}`, { method: "DELETE" });
-        fetchCollaborators();
+        fetchCollaborators(selectedMonth, currentYear);
     };
-
-    // const deleteAllCollaborators = async () => {
-    //     for (const collab of collaborators) {
-    //         await fetch(`http://localhost:5000/collaborators/${collab._id}`, { method: "DELETE" });
-    //     }
-    //     fetchCollaborators();
-    // };
 
     const startEditing = (collab: Collaborator) => {
         setEditingCollaborator(collab._id);
@@ -115,26 +112,12 @@ function Collaborateurs() {
         });
 
         setEditingCollaborator(null);
-        fetchCollaborators();
+        fetchCollaborators(selectedMonth, currentYear); // ✅ Rafraîchir la liste après modification
     };
 
 
     const toggleShowCollaborators = () => {
         setShowOnlyCollaborators(!showOnlyCollaborators);
-    };
-
-    const handleAddDays = async (collaboratorId: string, projectId: string | null, days: number) => {
-        if (!collaboratorId || days <= 0) return;
-
-        const response = await fetch(`http://localhost:5000/collaborators/${collaboratorId}/add-days`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ projectId, days }),
-        });
-
-        if (response.ok) {
-            fetchCollaborators(); // ✅ Mettre à jour l'affichage après l'ajout des jours
-        }
     };
 
     return (

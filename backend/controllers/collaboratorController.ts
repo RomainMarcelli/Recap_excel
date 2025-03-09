@@ -23,7 +23,7 @@ export const getCollaborators = async (req: Request, res: Response, next: NextFu
         const filterYear = year || getCurrentYear();
 
         // 🔥 Assure que les projets sont bien récupérés avec `populate`
-        const collaborators = await Collaborator.find()
+        const collaborators = await Collaborator.find({ month: filterMonth, year: filterYear })
             .populate("projects.projectId");
 
         res.status(200).json(collaborators);
@@ -129,7 +129,7 @@ export const addDaysWorked = async (req: Request, res: Response, next: NextFunct
         let existingEntry = await Collaborator.findOne({
             _id: id,
             month,
-            year
+            year,
         });
 
         if (existingEntry) {

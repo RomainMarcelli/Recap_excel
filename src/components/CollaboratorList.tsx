@@ -54,10 +54,24 @@ function CollaboratorList({
         { value: "12", label: "Décembre" },
     ];
 
-    // 🔥 Rafraîchir les données à chaque changement de mois ou d'année
+
     useEffect(() => {
-        fetchCollaborators(selectedMonth, currentYear);
-    }, [selectedMonth, currentYear]);
+        fetchCollaborators(selectedMonth, currentYear); // ✅ Récupère les collaborateurs avec le bon mois et année
+    }, [selectedMonth, currentYear]); // 🔥 Dépendances mises à jour pour recharger la liste à chaque changement de mois
+    
+
+    useEffect(() => {
+        const updatedDaysWorked: { [key: string]: number } = {};
+        collaborators.forEach(collab => {
+            collab.projects.forEach(project => {
+                const key = `${collab._id}-${project.projectId?._id}-${selectedMonth}-${currentYear}`;
+                updatedDaysWorked[key] = project.daysWorked ?? 0; // ✅ Charge les jours du bon mois
+            });
+        });
+
+        setDaysWorked(updatedDaysWorked);
+    }, [collaborators, selectedMonth, currentYear]);
+    
 
     // ✅ Met à jour l'état local quand on modifie un input
     const handleInputChange = (collabId: string, projectId: string, value: number) => {
@@ -70,7 +84,7 @@ function CollaboratorList({
     // ✅ Met à jour les jours travaillés pour un projet spécifique
     const handleUpdateDays = async (collabId: string, projectId: string) => {
         const key = `${collabId}-${projectId}-${selectedMonth}-${currentYear}`;
-        if (!daysWorked[key]) return;
+        if (daysWorked[key] == null) return; // ✅ Vérification
     
         try {
             const response = await fetch(`http://localhost:5000/collaborators/${collabId}/add-days`, {
@@ -79,8 +93,8 @@ function CollaboratorList({
                 body: JSON.stringify({
                     projectId,
                     days: daysWorked[key],
-                    month: selectedMonth,
-                    year: currentYear
+                    month: selectedMonth, // ✅ S'assure que le mois est envoyé
+                    year: currentYear, // ✅ S'assure que l'année est envoyée
                 }),
             });
     
@@ -114,7 +128,7 @@ function CollaboratorList({
                 draggable: true,
             });
         }
-    };    
+    };     
 
     // ✅ Met à jour tous les projets d'un coup
     const handleSaveAll = async () => {
@@ -124,7 +138,7 @@ function CollaboratorList({
             return fetch(`http://localhost:5000/collaborators/${collabId}/add-days`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectId, days, month, year }),
+                body: JSON.stringify({ projectId, days, month, year }), // ✅ Envoie le bon mois et année
             });
         });
     
@@ -138,7 +152,7 @@ function CollaboratorList({
                 pauseOnHover: true,
                 draggable: true,
             });
-            fetchCollaborators(selectedMonth, currentYear);
+            fetchCollaborators(selectedMonth, currentYear); // 🔥 Rafraîchir les données
             setDaysWorked({});
         } catch (error) {
             toast.error("Erreur lors de l'enregistrement global !", {
@@ -150,7 +164,7 @@ function CollaboratorList({
                 draggable: true,
             });
         }
-    };
+    };    
 
     return (
         <div className="mt-6 w-full max-w-lg">
