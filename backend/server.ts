@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import projectRoutes from "./routes/projectsRoute";
 import collaboratorRoutes from "./routes/collaboratorRoutes";
+import tjmRoutes from "./routes/tjmroutes";
 
 dotenv.config();
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/projects", projectRoutes);
 app.use("/collaborators", collaboratorRoutes);
+app.use("/api/tjm", tjmRoutes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err);

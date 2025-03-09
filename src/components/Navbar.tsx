@@ -19,6 +19,9 @@ function Navbar() {
           <li>
             <Link to="/collaborateurs" className="text-white hover:text-gray-300 hover:underline">Collaborateurs</Link>
           </li>
+          <li>
+            <Link to="/tjm" className="text-white hover:text-gray-300 hover:underline">TJM</Link>
+          </li>
         </ul>
       </div>
     </nav>
