@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { exportToStyledExcel } from "../components/excelExport";
+import * as XLSX from "xlsx"; // ✅ Importation de xlsx
 
 interface Project {
   _id: string;
@@ -48,6 +50,24 @@ function Home() {
       .catch((error) => console.error("Erreur lors du chargement :", error));
   }, [selectedMonth, currentYear]);
 
+  // ✅ Fonction pour générer et télécharger le fichier Excel
+  const exportToExcel = () => {
+    const worksheetData = collaborators.map((collab) => {
+      const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
+      const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
+  
+      return {
+        Nom: collab.name,
+        Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
+        "Total Jours Travaillés": totalDaysWorked,
+        "TJM Total (€)": tjmTotal ? `${tjmTotal.toLocaleString()} €` : "Non défini",
+        Commentaires: collab.comments || "Aucun commentaire",
+      };
+    });
+  
+    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}_${currentYear}`);
+  };  
+
   const saveComment = async (id: string) => {
     if (!commentText.trim()) {
       setEditingCommentId(null);
@@ -70,10 +90,10 @@ function Home() {
       const updatedCollaborator = await response.json();
       console.log("✅ Réponse reçue après mise à jour :", updatedCollaborator);
 
-      // ✅ Mise à jour correcte de l'état après modification du commentaire
+      // ✅ Mise à jour instantanée de l'état
       setCollaborators((prev) =>
         prev.map((collab) =>
-          collab._id === id ? { ...collab, comments: updatedCollaborator.comments } : collab
+          collab._id === id ? { ...collab, comments: commentText } : collab
         )
       );
     } catch (error) {
@@ -103,6 +123,13 @@ function Home() {
         </select>
       </div>
 
+      <button
+        onClick={exportToExcel}
+        className="mb-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+      >
+        📥 Exporter en Excel
+      </button>
+
       <p className="text-gray-600 mb-4">Détails des jours travaillés pour le mois sélectionné.</p>
 
       <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
@@ -118,7 +145,7 @@ function Home() {
           </thead>
           <tbody>
             {collaborators.length > 0 ? (
-              collaborators.map((collab, index) => {
+              collaborators.map((collab) => {
                 const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
                 const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
 
@@ -147,7 +174,7 @@ function Home() {
                     </td>
 
                     <td
-                      className="p-4 border text-gray-700 cursor-pointer hover:bg-gray-300 transition"
+                      className="p-4 border text-gray-500 text-sm italic cursor-pointer hover:bg-gray-200 transition"
                       onDoubleClick={() => {
                         setEditingCommentId(collab._id);
                         setCommentText(collab.comments || "");
@@ -164,11 +191,11 @@ function Home() {
                               saveComment(collab._id);
                             }
                           }}
-                          className="w-full border border-gray-300 p-1 rounded-md"
+                          className="w-full border border-gray-300 p-1 rounded-md text-sm"
                           autoFocus
                         />
                       ) : (
-                        collab.comments || <span className="text-gray-500 italic">Double-cliquez pour ajouter</span>
+                        collab.comments || <span className="text-gray-400 italic">Double-cliquez pour ajouter</span>
                       )}
                     </td>
                   </tr>
