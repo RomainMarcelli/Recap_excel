@@ -14,13 +14,38 @@ const getCurrentYear = (): number => {
     return new Date().getFullYear();
 };
 
-// Récupérer tous les collaborateurs avec leurs projets
+export const getCollaboratorById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        // Vérifie si l'ID est valide
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            res.status(400).json({ error: "ID invalide" });
+            return;
+        }
+
+        // Recherche du collaborateur avec ses projets associés
+        const collaborator = await Collaborator.findById(id).populate("projects.projectId");
+
+        if (!collaborator) {
+            res.status(404).json({ error: "Collaborateur non trouvé" });
+            return;
+        }
+
+        res.status(200).json(collaborator);
+    } catch (error) {
+        console.error("Erreur lors de la récupération du collaborateur :", error);
+        res.status(500).json({ error: "Erreur interne du serveur" });
+    }
+};
+
+// 📌 Fonction pour récupérer tous les collaborateurs avec leurs projets
 export const getCollaborators = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { month, year } = req.query;
 
-        const filterMonth = month || getCurrentMonth();
-        const filterYear = year || getCurrentYear();
+        const filterMonth = month || new Date().toISOString().slice(5, 7);
+        const filterYear = year || new Date().getFullYear();
 
         // 🔥 Assure que les projets sont bien récupérés avec `populate`
         const collaborators = await Collaborator.find({ month: filterMonth, year: filterYear })

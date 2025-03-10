@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { exportToStyledExcel } from "../components/excelExport";
-import * as XLSX from "xlsx"; // ✅ Importation de xlsx
+import { Link } from "react-router-dom";
+import { exportToStyledExcel } from "../components/excelExport"; // Importation du fichier d'export Excel
+
 
 interface Project {
   _id: string;
@@ -34,66 +35,69 @@ const months = [
   { value: "12", label: "Décembre" },
 ];
 
+// 🎨 Couleurs associées à chaque mois
+const monthColors: { [key: string]: { bg: string; text: string; tableHeader: string } } = {
+  "01": { bg: "bg-red-200", text: "text-red-800", tableHeader: "bg-red-500" },
+  "02": { bg: "bg-yellow-200", text: "text-yellow-800", tableHeader: "bg-yellow-500" },
+  "03": { bg: "bg-green-200", text: "text-green-800", tableHeader: "bg-green-500" },
+  "04": { bg: "bg-blue-200", text: "text-blue-800", tableHeader: "bg-blue-500" },
+  "05": { bg: "bg-purple-200", text: "text-purple-800", tableHeader: "bg-purple-500" },
+  "06": { bg: "bg-pink-200", text: "text-pink-800", tableHeader: "bg-pink-500" },
+  "07": { bg: "bg-orange-200", text: "text-orange-800", tableHeader: "bg-orange-500" },
+  "08": { bg: "bg-gray-200", text: "text-gray-800", tableHeader: "bg-gray-500" },
+  "09": { bg: "bg-indigo-200", text: "text-indigo-800", tableHeader: "bg-indigo-500" },
+  "10": { bg: "bg-teal-200", text: "text-teal-800", tableHeader: "bg-teal-500" },
+  "11": { bg: "bg-lime-200", text: "text-lime-800", tableHeader: "bg-lime-500" },
+  "12": { bg: "bg-cyan-200", text: "text-cyan-800", tableHeader: "bg-cyan-500" },
+};
+
 function Home() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7));
+  const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState<string>("");
 
   const selectedMonthName = months.find((m) => m.value === selectedMonth)?.label || "Mois inconnu";
+  const currentColors = monthColors[selectedMonth] || monthColors["01"]; // Valeur par défaut
+
+  // ✅ Fonction pour exporter les données en Excel
+  const exportToExcel = () => {
+    const worksheetData = collaborators.map((collab) => ({
+      Nom: collab.name,
+      Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
+      "Total Jours Travaillés": collab.projects.reduce((acc, p) => acc + p.daysWorked, 0),
+      "TJM Total (€)": collab.tjm ? `${(collab.tjm * collab.projects.reduce((acc, p) => acc + p.daysWorked, 0)).toLocaleString()} €` : "Non défini",
+      Commentaires: collab.comments || "Aucun commentaire",
+    }));
+
+    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}`);
+  };
 
   useEffect(() => {
-    fetch(`http://localhost:5000/collaborators?month=${selectedMonth}&year=${currentYear}`)
+    fetch(`http://localhost:5000/collaborators?month=${selectedMonth}`)
       .then((response) => response.json())
       .then((data) => setCollaborators(data))
       .catch((error) => console.error("Erreur lors du chargement :", error));
-  }, [selectedMonth, currentYear]);
+  }, [selectedMonth]);
 
-  // ✅ Fonction pour générer et télécharger le fichier Excel
-  const exportToExcel = () => {
-    const worksheetData = collaborators.map((collab) => {
-      const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
-      const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
-  
-      return {
-        Nom: collab.name,
-        Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
-        "Total Jours Travaillés": totalDaysWorked,
-        "TJM Total (€)": tjmTotal ? `${tjmTotal.toLocaleString()} €` : "Non défini",
-        Commentaires: collab.comments || "Aucun commentaire",
-      };
-    });
-  
-    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}_${currentYear}`);
-  };  
-
+  // ✅ Fonction pour mettre à jour instantanément les commentaires
   const saveComment = async (id: string) => {
-    if (!commentText.trim()) {
+    if (!commentText[id]?.trim()) {
       setEditingCommentId(null);
       return;
     }
 
-    console.log("🔵 Envoi de la mise à jour du commentaire pour :", id, "avec :", commentText);
-
     try {
-      const response = await fetch(`http://localhost:5000/collaborators/${id}/comment`, {
+      await fetch(`http://localhost:5000/collaborators/${id}/comment`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comments: commentText }),
+        body: JSON.stringify({ comments: commentText[id] }),
       });
-
-      if (!response.ok) {
-        throw new Error("Erreur lors de la mise à jour du commentaire");
-      }
-
-      const updatedCollaborator = await response.json();
-      console.log("✅ Réponse reçue après mise à jour :", updatedCollaborator);
 
       // ✅ Mise à jour instantanée de l'état
       setCollaborators((prev) =>
         prev.map((collab) =>
-          collab._id === id ? { ...collab, comments: commentText } : collab
+          collab._id === id ? { ...collab, comments: commentText[id] } : collab
         )
       );
     } catch (error) {
@@ -104,16 +108,18 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
-      <div className="w-full flex justify-between items-center max-w-4xl mb-6">
-        <h1 className="text-3xl font-bold text-blue-600">
-          Suivi du travail - {selectedMonthName} {currentYear}
-        </h1>
+    <div className={`flex flex-col items-center justify-center min-h-screen p-6 ${currentColors.bg}`}>
+      <h1 className={`text-3xl font-bold ${currentColors.text} mb-6`}>
+        Suivi du travail - {selectedMonthName}
+      </h1>
 
+      {/* Sélection du mois */}
+      <div className="mb-4">
+        <label className="mr-2 font-medium text-gray-700">📅 Sélectionner un mois :</label>
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="border border-gray-300 p-2 rounded-md shadow-md text-gray-700 bg-white"
+          className="border border-gray-300 p-2 rounded-md shadow-md bg-white"
         >
           {months.map((month) => (
             <option key={month.value} value={month.value}>
@@ -121,93 +127,74 @@ function Home() {
             </option>
           ))}
         </select>
-      </div>
-
+      {/* Bouton Export Excel */}
       <button
         onClick={exportToExcel}
-        className="mb-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+        className="mb-4 bg-green-500 text-white ml-6 px-4 py-2 rounded-md hover:bg-green-600 transition"
       >
         📥 Exporter en Excel
       </button>
+      </div>
 
-      <p className="text-gray-600 mb-4">Détails des jours travaillés pour le mois sélectionné.</p>
 
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+      <div className="w-full max-w-4xl shadow-lg rounded-lg overflow-hidden">
         <table className="w-full border-collapse border border-gray-300">
           <thead>
-            <tr className="bg-blue-600 text-white text-left">
+            <tr className={`${currentColors.tableHeader} text-white`}>
               <th className="p-4 border">Nom</th>
               <th className="p-4 border">Projets</th>
-              <th className="p-4 border text-center">Total Jours Travaillés</th>
+              <th className="p-4 border text-center">Jours Travaillés</th>
+              <th className="p-4 border text-center">TJM par Projet (€)</th>
               <th className="p-4 border text-center">TJM Total (€)</th>
               <th className="p-4 border">Commentaires</th>
             </tr>
           </thead>
           <tbody>
-            {collaborators.length > 0 ? (
-              collaborators.map((collab) => {
-                const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
-                const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
-
-                return (
-                  <tr key={collab._id} className="border">
-                    <td className="p-4 border font-medium">{collab.name}</td>
-
-                    <td className="p-4 border">
-                      {collab.projects.length > 0 ? (
-                        <ul className="space-y-1">
-                          {collab.projects.map((project) => (
-                            <li key={project.projectId?._id} className="text-blue-700">
-                              {project.projectId?.name} - <span className="font-bold">{project.daysWorked} jours</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-500">Aucun projet</span>
-                      )}
-                    </td>
-
-                    <td className="p-4 border text-center font-semibold">{totalDaysWorked} jours</td>
-
-                    <td className="p-4 border text-center font-semibold">
-                      {collab.tjm ? `${tjmTotal.toLocaleString()} €` : <span className="text-gray-500">Non défini</span>}
-                    </td>
-
-                    <td
-                      className="p-4 border text-gray-500 text-sm italic cursor-pointer hover:bg-gray-200 transition"
-                      onDoubleClick={() => {
-                        setEditingCommentId(collab._id);
-                        setCommentText(collab.comments || "");
-                      }}
-                    >
-                      {editingCommentId === collab._id ? (
-                        <input
-                          type="text"
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          onBlur={() => saveComment(collab._id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              saveComment(collab._id);
-                            }
-                          }}
-                          className="w-full border border-gray-300 p-1 rounded-md text-sm"
-                          autoFocus
-                        />
-                      ) : (
-                        collab.comments || <span className="text-gray-400 italic">Double-cliquez pour ajouter</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={5} className="p-6 border text-center text-gray-500">
-                  Aucun collaborateur trouvé pour ce mois.
+            {collaborators.map((collab) => (
+              <tr key={collab._id} className="border">
+                <td className="p-4 border font-medium">
+                  <Link to={`/collaborateur/${collab._id}`} className="text-blue-600 hover:underline">
+                    {collab.name}
+                  </Link>
+                </td>
+                <td className="p-4 border">
+                  {collab.projects.map((p) => (
+                    <div key={p.projectId._id}>{p.projectId.name}</div>
+                  ))}
+                </td>
+                <td className="p-4 border text-center">
+                  {collab.projects.map((p) => (
+                    <div key={p.projectId._id}>{p.daysWorked} jours</div>
+                  ))}
+                </td>
+                <td className="p-4 border text-center">
+                  {collab.projects.map((p) => (
+                    <div key={p.projectId._id}>
+                      {collab.tjm ? `${(p.daysWorked * collab.tjm).toLocaleString()} €` : "Non défini"}
+                    </div>
+                  ))}
+                </td>
+                <td className="p-4 border text-center font-bold">
+                  {collab.tjm ? `${(collab.tjm * collab.projects.reduce((acc, p) => acc + p.daysWorked, 0)).toLocaleString()} €` : "Non défini"}
+                </td>
+                <td className="p-4 border text-gray-500 italic">
+                  {editingCommentId === collab._id ? (
+                    <input
+                      type="text"
+                      value={commentText[collab._id] || ""}
+                      onChange={(e) => setCommentText({ ...commentText, [collab._id]: e.target.value })}
+                      onBlur={() => saveComment(collab._id)}
+                      className="w-full border p-1 rounded-md"
+                      autoFocus
+                    />
+                  ) : (
+                    <span onDoubleClick={() => setEditingCommentId(collab._id)}>
+                      {collab.comments || "Double-cliquez pour ajouter"}
+                    </span>
+                  )}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
