@@ -60,18 +60,31 @@ function Home() {
   const selectedMonthName = months.find((m) => m.value === selectedMonth)?.label || "Mois inconnu";
   const currentColors = monthColors[selectedMonth] || monthColors["01"]; // Valeur par défaut
 
-  // ✅ Fonction pour exporter les données en Excel
   const exportToExcel = () => {
-    const worksheetData = collaborators.map((collab) => ({
-      Nom: collab.name,
-      Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
-      "Total Jours Travaillés": collab.projects.reduce((acc, p) => acc + p.daysWorked, 0),
-      "TJM Total (€)": collab.tjm ? `${(collab.tjm * collab.projects.reduce((acc, p) => acc + p.daysWorked, 0)).toLocaleString()} €` : "Non défini",
-      Commentaires: collab.comments || "Aucun commentaire",
-    }));
-
-    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}`);
-  };
+    const currentYear = new Date().getFullYear(); // ✅ Ajout de currentYear
+  
+    const worksheetData = collaborators.map((collab) => {
+      const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
+      const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
+  
+      return {
+        Nom: collab.name,
+        Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
+        "Jours Travaillés par Projet": collab.projects
+          .map((p) => `${p.projectId?.name}: ${p.daysWorked} jours`)
+          .join(", ") || "Aucun",
+        "TJM par Projet (€)": collab.projects
+          .map((p) => (collab.tjm ? `${(p.daysWorked * collab.tjm).toLocaleString()} €` : "Non défini"))
+          .join(", ") || "Non défini",
+        "Total Jours Travaillés": totalDaysWorked,
+        "TJM Total (€)": tjmTotal ? `${tjmTotal.toLocaleString()} €` : "Non défini",
+        Commentaires: collab.comments || "Aucun commentaire",
+        Mois: selectedMonth, // ✅ Ajout du mois pour les couleurs
+      };
+    });
+  
+    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}_${currentYear}`);
+  };  
 
   useEffect(() => {
     fetch(`http://localhost:5000/collaborators?month=${selectedMonth}`)
