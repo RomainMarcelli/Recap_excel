@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 interface Collaborator {
@@ -36,21 +36,23 @@ function TJM() {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tjm }),
-            });            
+            });
 
             if (response.ok) {
-                toast.success("TJM mis à jour avec succès !");
+                toast.success("✅ TJM mis à jour avec succès !");
                 fetchCollaborators(); // 🔥 Met à jour la liste
             } else {
-                toast.error("Échec de la mise à jour du TJM.");
+                toast.error("❌ Échec de la mise à jour du TJM.");
             }
         } catch (error) {
-            toast.error("Erreur de connexion au serveur !");
+            toast.error("❌ Erreur de connexion au serveur !");
         }
     };
 
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
+            <ToastContainer position="top-right" autoClose={2000} hideProgressBar={false} closeOnClick pauseOnHover draggable />
+
             <h1 className="text-3xl font-bold text-blue-600 mb-4">Gérer le TJM des Collaborateurs</h1>
 
             {/* Sélection du collaborateur */}
