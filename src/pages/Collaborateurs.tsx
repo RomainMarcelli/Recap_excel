@@ -129,20 +129,6 @@ function Collaborateurs() {
             >
                 {showOnlyCollaborators ? "Revenir à l'affichage normal" : "Nombre de jours travaillés"}
             </button>
-            {/* <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Sélectionner un mois :</label>
-                <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full border border-gray-300 p-2 rounded-md"
-                >
-                    {months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                            {month.label}
-                        </option>
-                    ))}
-                </select>
-            </div> */}
 
             {/* Affichage uniquement de la liste des collaborateurs */}
             {showOnlyCollaborators ? (
