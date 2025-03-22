@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import CollaboratorList from "../components/CollaboratorList";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Project {
     _id: string;  // ID du projet
@@ -11,7 +13,7 @@ interface Collaborator {
     _id: string;
     name: string;
     totalDaysWorked: number;
-    tjm?: number; // ✅ Ajoute cette ligne
+    tjm?: number; //  Ajoute cette ligne
     projects: {
         projectId: Project;
         daysWorked: number;
@@ -45,14 +47,14 @@ function Collaborateurs() {
 
             const data = await response.json();
 
-            // ✅ Transformation des données pour bien récupérer les jours travaillés du bon mois
+            //  Transformation des données pour bien récupérer les jours travaillés du bon mois
             const updatedCollaborators = data.map((collab: Collaborator) => ({
                 ...collab,
                 projects: collab.projects.map((p) => ({
                     ...p,
-                    daysWorked: p.daysWorked ?? 0, // ✅ Ajoute une valeur par défaut si `daysWorked` est null
+                    daysWorked: p.daysWorked ?? 0, //  Ajoute une valeur par défaut si `daysWorked` est null
                 })),
-                totalDaysWorked: collab.projects.reduce((total, p) => total + (p.daysWorked ?? 0), 0), // ✅ Calcule correctement le total
+                totalDaysWorked: collab.projects.reduce((total, p) => total + (p.daysWorked ?? 0), 0), //  Calcule correctement le total
             }));
 
             setCollaborators(updatedCollaborators);
@@ -75,30 +77,33 @@ function Collaborateurs() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name,
-                projects: formattedProjects, // ✅ Correction ici
+                projects: formattedProjects, //  Correction ici
                 month: selectedMonth,
                 year: currentYear,
-                tjm: tjm === "" ? null : tjm, // ✅ Envoie le TJM ici !
+                tjm: tjm === "" ? null : tjm, //  Envoie le TJM ici !
             }),
         });
 
         if (response.ok) {
-            fetchCollaborators(selectedMonth, currentYear); // ✅ Met à jour la liste avec le bon mois
+            fetchCollaborators(selectedMonth, currentYear); //  Met à jour la liste avec le bon mois
             setName("");
             setSelectedProjects([]);
-            setTjm(""); // ✅ Réinitialise aussi le champ TJM après ajout
+            setTjm(""); //  Réinitialise aussi le champ TJM après ajout
+            toast.success(" Collaborateur ajouté avec succès !");
         }
+
     };
 
     const deleteCollaborator = async (id: string) => {
         await fetch(`http://localhost:5000/collaborators/${id}`, { method: "DELETE" });
         fetchCollaborators(selectedMonth, currentYear);
+        toast.success("Collaborateur supprimé");
     };
 
     const startEditing = (collab: Collaborator) => {
         setEditingCollaborator(collab._id);
         setUpdatedName(collab.name);
-        setUpdatedProjects(collab.projects.map((p) => p.projectId?._id || "")); // ✅ Vérification si `projectId` est défini
+        setUpdatedProjects(collab.projects.map((p) => p.projectId?._id || "")); //  Vérification si `projectId` est défini
         setUpdatedTjm(collab.tjm ?? "");
     };
 
@@ -113,23 +118,31 @@ function Collaborateurs() {
             body: JSON.stringify({
                 name: updatedName,
                 projects: updatedProjects,
-                month: selectedMonth,  // ✅ Ajout du mois sélectionné
-                year: currentYear,      // ✅ Ajout de l'année sélectionnée
-                tjm: updatedTjm === "" ? null : updatedTjm, // ✅ ajoute ça
+                month: selectedMonth,  //  Ajout du mois sélectionné
+                year: currentYear,      //  Ajout de l'année sélectionnée
+                tjm: updatedTjm === "" ? null : updatedTjm, //  ajoute ça
             }),
         });
 
         setEditingCollaborator(null);
-        fetchCollaborators(selectedMonth, currentYear); // ✅ Rafraîchir la liste après modification
+        fetchCollaborators(selectedMonth, currentYear); //  Rafraîchir la liste après modification
+        toast.success("Collaborateur mis à jour");
     };
 
 
     const toggleShowCollaborators = () => {
         setShowOnlyCollaborators(!showOnlyCollaborators);
     };
-
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
+            <ToastContainer
+                position="top-right"
+                autoClose={2000}
+                hideProgressBar={false}
+                closeOnClick={true}
+                pauseOnHover={true}
+                draggable={true}
+            />
             {/* 🟦 Bouton pour afficher les jours travaillés */}
             <motion.button
                 onClick={toggleShowCollaborators}
@@ -226,7 +239,7 @@ function Collaborateurs() {
                             whileTap={{ scale: 0.95 }}
                             className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition"
                         >
-                            ➕ Ajouter Collaborateur
+                            Ajouter Collaborateur
                         </motion.button>
                     </motion.div>
 
