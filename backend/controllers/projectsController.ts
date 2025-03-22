@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { Project } from "../models/projectsModel";
 import Collaborator from "../models/collaboratorModel"; // Import du modèle des collaborateurs
 
-// Récupérer tous les projets
+// 🔹 Récupérer tous les projets
 export const getProjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const projects = await Project.find();
@@ -12,7 +12,7 @@ export const getProjects = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-// Ajouter un projet
+// 🔹 Ajouter un projet
 export const addProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const newProject = new Project({ name: req.body.name });
@@ -23,7 +23,7 @@ export const addProject = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-// Mettre à jour un projet
+// 🔹 Mettre à jour un projet
 export const updateProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const updatedProject = await Project.findByIdAndUpdate(
@@ -43,7 +43,7 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// Supprimer un projet
+// 🔹 Supprimer un projet
 export const deleteProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const deletedProject = await Project.findByIdAndDelete(req.params.id);
@@ -60,60 +60,70 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
 };
 
 
-// ✅ Fonction pour récupérer les projets groupés par mois
 export const getRecapByMonth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Regroupement des projets par mois
+    const { year } = req.query;
+    const selectedYear = year ? Number(year) : new Date().getFullYear();
+
     const recapData = await Collaborator.aggregate([
-      {
-        $unwind: "$projects", // Sépare chaque projet dans un document distinct
-      },
+      { $unwind: "$workloads" },
+      { $match: { "workloads.year": selectedYear } }, // Filtrer par année uniquement dans les workloads
       {
         $lookup: {
-          from: "projects", // Assurez-vous que le nom de la collection est correct
-          localField: "projects.projectId",
+          from: "projects",
+          localField: "workloads.projectId",
           foreignField: "_id",
-          as: "projectInfo",
-        },
+          as: "projectInfo"
+        }
       },
-      {
-        $unwind: "$projectInfo",
-      },
+      { $unwind: "$projectInfo" },
       {
         $group: {
           _id: {
-            month: "$month",
-            projectId: "$projects.projectId",
+            month: "$workloads.month",
+            projectId: "$workloads.projectId"
           },
           projectName: { $first: "$projectInfo.name" },
           totalCost: {
             $sum: {
-              $multiply: ["$projects.daysWorked", "$tjm"], // Calcul du coût total
-            },
+              $multiply: ["$workloads.daysWorked", "$tjm"]
+            }
           },
-        },
+          year: { $first: "$workloads.year" }
+        }
       },
       {
         $group: {
-          _id: "$_id.month",
+          _id: {
+            month: "$_id.month",
+            year: "$year"
+          },
           projects: {
             $push: {
               _id: "$_id.projectId",
               name: "$projectName",
-              totalCost: "$totalCost",
-            },
+              totalCost: "$totalCost"
+            }
           },
-          totalMonthCost: { $sum: "$totalCost" }, // Total pour le mois
-        },
+          totalMonthCost: { $sum: "$totalCost" }
+        }
       },
       {
-        $sort: { _id: 1 }, // Trie les mois dans l'ordre croissant
+        $project: {
+          _id: 0,
+          month: "$_id.month",
+          year: "$_id.year",
+          projects: 1,
+          totalMonthCost: 1
+        }
       },
+      { $sort: { month: 1 } }
     ]);
 
+    console.log("📊 Résultat final du recap :", JSON.stringify(recapData, null, 2));
     res.status(200).json(recapData);
   } catch (error) {
-    console.error("Erreur lors de la récupération du récapitulatif :", error);
+    console.error("❌ Erreur lors du récapitulatif des projets :", error);
     next(error);
   }
 };

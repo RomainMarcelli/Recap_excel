@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { exportToStyledExcel } from "../components/excelExport"; // Importation du fichier d'export Excel
-
+import { exportToStyledExcel } from "../components/excelExport";
 
 interface Project {
   _id: string;
@@ -35,7 +34,6 @@ const months = [
   { value: "12", label: "Décembre" },
 ];
 
-// 🎨 Couleurs associées à chaque mois
 const monthColors: { [key: string]: { bg: string; text: string; tableHeader: string } } = {
   "01": { bg: "bg-red-200", text: "text-red-800", tableHeader: "bg-red-500" },
   "02": { bg: "bg-yellow-200", text: "text-yellow-800", tableHeader: "bg-yellow-500" },
@@ -54,46 +52,40 @@ const monthColors: { [key: string]: { bg: string; text: string; tableHeader: str
 function Home() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7));
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
   const selectedMonthName = months.find((m) => m.value === selectedMonth)?.label || "Mois inconnu";
-  const currentColors = monthColors[selectedMonth] || monthColors["01"]; // Valeur par défaut
+  const currentColors = monthColors[selectedMonth] || monthColors["01"];
 
   const exportToExcel = () => {
-    const currentYear = new Date().getFullYear(); // ✅ Ajout de currentYear
-  
     const worksheetData = collaborators.map((collab) => {
       const totalDaysWorked = collab.projects.reduce((acc, project) => acc + project.daysWorked, 0);
       const tjmTotal = collab.tjm ? totalDaysWorked * collab.tjm : 0;
-  
+
       return {
         Nom: collab.name,
         Projets: collab.projects.map((p) => p.projectId?.name).join(", ") || "Aucun projet",
-        "Jours Travaillés par Projet": collab.projects
-          .map((p) => `${p.projectId?.name}: ${p.daysWorked} jours`)
-          .join(", ") || "Aucun",
-        "TJM par Projet (€)": collab.projects
-          .map((p) => (collab.tjm ? `${(p.daysWorked * collab.tjm).toLocaleString()} €` : "Non défini"))
-          .join(", ") || "Non défini",
+        "Jours Travaillés par Projet": collab.projects.map((p) => `${p.projectId?.name}: ${p.daysWorked} jours`).join(", ") || "Aucun",
+        "TJM par Projet (€)": collab.projects.map((p) => (collab.tjm ? `${(p.daysWorked * collab.tjm).toLocaleString()} €` : "Non défini")).join(", ") || "Non défini",
         "Total Jours Travaillés": totalDaysWorked,
         "TJM Total (€)": tjmTotal ? `${tjmTotal.toLocaleString()} €` : "Non défini",
         Commentaires: collab.comments || "Aucun commentaire",
-        Mois: selectedMonth, // ✅ Ajout du mois pour les couleurs
+        Mois: selectedMonth,
       };
     });
-  
-    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}_${currentYear}`);
-  };  
+
+    exportToStyledExcel(worksheetData, `Suivi_Collaborateurs_${selectedMonthName}_${selectedYear}`);
+  };
 
   useEffect(() => {
-    fetch(`http://localhost:5000/collaborators?month=${selectedMonth}`)
+    fetch(`http://localhost:5000/collaborators?month=${selectedMonth}&year=${selectedYear}`)
       .then((response) => response.json())
       .then((data) => setCollaborators(data))
       .catch((error) => console.error("Erreur lors du chargement :", error));
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedYear]);
 
-  // ✅ Fonction pour mettre à jour instantanément les commentaires
   const saveComment = async (id: string) => {
     if (!commentText[id]?.trim()) {
       setEditingCommentId(null);
@@ -107,7 +99,6 @@ function Home() {
         body: JSON.stringify({ comments: commentText[id] }),
       });
 
-      // ✅ Mise à jour instantanée de l'état
       setCollaborators((prev) =>
         prev.map((collab) =>
           collab._id === id ? { ...collab, comments: commentText[id] } : collab
@@ -123,12 +114,11 @@ function Home() {
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen p-6 ${currentColors.bg}`}>
       <h1 className={`text-3xl font-bold ${currentColors.text} mb-6`}>
-        Suivi du travail - {selectedMonthName}
+        Suivi du travail - {selectedMonthName} {selectedYear}
       </h1>
 
-      {/* Sélection du mois */}
-      <div className="mb-4">
-        <label className="mr-2 font-medium text-gray-700">📅 Sélectionner un mois :</label>
+      <div className="mb-4 flex flex-wrap gap-4 items-center">
+        <label className="font-medium text-gray-700">📅 Sélectionner un mois :</label>
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
@@ -140,15 +130,26 @@ function Home() {
             </option>
           ))}
         </select>
-      {/* Bouton Export Excel */}
-      <button
-        onClick={exportToExcel}
-        className="mb-4 bg-green-500 text-white ml-6 px-4 py-2 rounded-md hover:bg-green-600 transition"
-      >
-        📥 Exporter en Excel
-      </button>
-      </div>
 
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          className="border border-gray-300 p-2 rounded-md shadow-md bg-white"
+        >
+          {[2023, 2024, 2025].map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={exportToExcel}
+          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+        >
+          📥 Exporter en Excel
+        </button>
+      </div>
 
       <div className="w-full max-w-4xl shadow-lg rounded-lg overflow-hidden">
         <table className="w-full border-collapse border border-gray-300">
