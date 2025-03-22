@@ -1,37 +1,52 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
+// ✅ Interface pour les projets assignés
 interface IProject {
-    projectId: Types.ObjectId; // Référence vers la collection Project
-    daysWorked: number; // Nombre de jours travaillés par projet
+  projectId: Types.ObjectId;
+  daysWorked: number;
 }
 
-interface ICollaborator extends Document {
-    name: string;
-    totalDaysWorked: number;
-    projects: IProject[];
-    month: string; // ✅ Ajout du champ mois
-    year: number;  // ✅ Ajout de l'année pour mieux gérer l'historique
-    comments?: string; // ✅ Ajout du champ commentaire
-    tjm?: number;  // ✅ Nouveau champ TJM (Taux Journalier Moyen)
+// ✅ Interface pour les jours travaillés par mois/année
+interface WorkByMonth {
+  projectId: Types.ObjectId;
+  daysWorked: number;
+  month: string;
+  year: number;
 }
 
+// ✅ Interface principale
+export interface ICollaborator extends Document {
+  name: string;
+  totalDaysWorked: number;
+  projects: IProject[];
+  workloads?: WorkByMonth[]; // ✅ Liste des jours par projet et par mois
+  comments?: string;
+  tjm?: number;
+}
+
+// ✅ Schéma mongoose
 const CollaboratorSchema = new Schema<ICollaborator>({
-    name: { type: String, required: true },
-    totalDaysWorked: { type: Number, default: 0 },
-    projects: [
-        {
-            projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
-            daysWorked: { type: Number, default: 0 },
-        },
-    ],
-    month: { type: String, required: true, default: new Date().toISOString().slice(5, 7) }, // ✅ Ajout du mois
-    year: { type: Number, required: true, default: new Date().getFullYear() }, // ✅ Ajout de l'année
-    tjm: { type: Number, default: null }, // ✅ Champ TJM
-    comments: { type: String, default: "" }, // ✅ Ajout du champ commentaires avec une valeur par défaut vide
+  name: { type: String, required: true },
+  totalDaysWorked: { type: Number, default: 0 },
+  projects: [
+    {
+      projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
+      daysWorked: { type: Number, default: 0 },
+    },
+  ],
+  workloads: [
+    {
+      projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
+      daysWorked: { type: Number, default: 0 },
+      month: { type: String, required: true },
+      year: { type: Number, required: true },
+    },
+  ],
+  tjm: { type: Number, default: null },
+  comments: { type: String, default: "" },
 });
 
 console.log("🔵 Modèle Collaborator chargé avec succès.");
 
 const Collaborator = mongoose.model<ICollaborator>("Collaborator", CollaboratorSchema);
-
 export default Collaborator;

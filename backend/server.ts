@@ -4,7 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import projectRoutes from "./routes/projectsRoute";
 import collaboratorRoutes from "./routes/collaboratorRoutes";
-import tjmRoutes from "./routes/tjmroutes";
+import tjmRoutes from "./routes/tjmRoutes";
 
 dotenv.config();
 const app = express();

@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import Collaborator from "../models/collaboratorModel"; // ✅ Correct : Importation par défaut
+import Collaborator from "../models/collaboratorModel";
 import { Project } from "../models/projectsModel";
-import mongoose from "mongoose"; // Ajout pour ObjectId
-
+import mongoose from "mongoose";
 
 // 📌 Fonction pour récupérer le mois actuel (ex: "03" pour mars)
 const getCurrentMonth = (): string => {
@@ -18,13 +17,11 @@ export const getCollaboratorById = async (req: Request, res: Response, next: Nex
     try {
         const { id } = req.params;
 
-        // Vérifie si l'ID est valide
         if (!mongoose.Types.ObjectId.isValid(id)) {
             res.status(400).json({ error: "ID invalide" });
             return;
         }
 
-        // Recherche du collaborateur avec ses projets associés
         const collaborator = await Collaborator.findById(id).populate("projects.projectId");
 
         if (!collaborator) {
@@ -39,43 +36,63 @@ export const getCollaboratorById = async (req: Request, res: Response, next: Nex
     }
 };
 
-// 📌 Fonction pour récupérer tous les collaborateurs avec leurs projets
 export const getCollaborators = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { month, year } = req.query;
 
-        const filterMonth = month || new Date().toISOString().slice(5, 7);
-        const filterYear = year || new Date().getFullYear();
+        const collaborators = await Collaborator.find({})
+            .populate("projects.projectId")
+            .populate("workloads.projectId");
 
-        // 🔥 Assure que les projets sont bien récupérés avec `populate`
-        const collaborators = await Collaborator.find({ month: filterMonth, year: filterYear })
-            .populate("projects.projectId");
+        const filtered = collaborators.map((collab) => {
+            const filteredWorkloads = collab.workloads?.filter(
+                (w) => w.month === month && w.year === Number(year)
+            ) || [];
 
-        res.status(200).json(collaborators);
+            const projectsWithDays = collab.projects.map((p) => {
+                const projectIdStr = (p.projectId as any)._id?.toString?.() || p.projectId?.toString?.();
+
+                const workload = filteredWorkloads.find((w) => {
+                    const workloadProjectIdStr = (w.projectId as any)._id?.toString?.() || w.projectId?.toString?.();
+                    return workloadProjectIdStr === projectIdStr;
+                });
+
+                return {
+                    ...p,
+                    daysWorked: workload?.daysWorked || 0,
+                    projectId: p.projectId, // on garde bien le projet peuplé
+                };
+            });
+
+            return {
+                ...collab.toObject(),
+                projects: projectsWithDays,
+            };
+        });
+
+        res.status(200).json(filtered);
     } catch (error) {
         console.error("Erreur lors de la récupération des collaborateurs :", error);
         next(error);
     }
 };
 
+
 export const addCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { name, projects } = req.body;
 
-        // Vérifier si les projets existent en base de données
         const existingProjects = await Project.find({ _id: { $in: projects } });
         if (existingProjects.length !== projects.length) {
             res.status(400).json({ error: "Un ou plusieurs projets n'existent pas" });
             return;
         }
 
-        // Formater les projets avec des `ObjectId`
         const formattedProjects = projects.map((projId: string) => ({
             projectId: new mongoose.Types.ObjectId(projId),
             daysWorked: 0,
         }));
 
-        // Créer le nouveau collaborateur avec ses projets
         const newCollaborator = new Collaborator({
             name,
             projects: formattedProjects
@@ -83,7 +100,6 @@ export const addCollaborator = async (req: Request, res: Response, next: NextFun
 
         await newCollaborator.save();
 
-        // 🔥 Rechercher et retourner le collaborateur avec ses projets peuplés
         const populatedCollaborator = await Collaborator.findById(newCollaborator._id).populate("projects.projectId");
 
         res.status(201).json(populatedCollaborator);
@@ -92,20 +108,16 @@ export const addCollaborator = async (req: Request, res: Response, next: NextFun
     }
 };
 
-
-// Mettre à jour un collaborateur
 export const updateCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { name, projects } = req.body;
 
-        // Vérifier si les projets existent
         const existingProjects = await Project.find({ _id: { $in: projects } });
         if (existingProjects.length !== projects.length) {
             res.status(400).json({ error: "Un ou plusieurs projets n'existent pas" });
             return;
         }
 
-        // Conserver les jours travaillés existants lors de la mise à jour
         const collaborator = await Collaborator.findById(req.params.id);
         if (!collaborator) {
             res.status(404).json({ error: "Collaborateur non trouvé" });
@@ -120,7 +132,6 @@ export const updateCollaborator = async (req: Request, res: Response, next: Next
             };
         });
 
-        // Mise à jour du collaborateur avec ses projets
         const updatedCollaborator = await Collaborator.findByIdAndUpdate(
             req.params.id,
             { name, projects: updatedProjects },
@@ -133,13 +144,12 @@ export const updateCollaborator = async (req: Request, res: Response, next: Next
     }
 };
 
-// Ajouter des jours travaillés à un collaborateur (total ou par projet)
 export const addDaysWorked = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { projectId, days, month, year } = req.body;
         const { id } = req.params;
 
-        if (!days || days < 0) {
+        if (days == null || days < 0) {
             res.status(400).json({ error: "Le nombre de jours doit être supérieur ou égal à 0" });
             return;
         }
@@ -150,49 +160,33 @@ export const addDaysWorked = async (req: Request, res: Response, next: NextFunct
             return;
         }
 
-        // 🔥 Vérifie si le collaborateur a déjà une entrée pour ce mois et cette année
-        let existingEntry = await Collaborator.findOne({
-            _id: id,
-            month,
-            year,
-        });
-
-        if (existingEntry) {
-            // 🔥 Si une entrée existe pour ce mois, met à jour les jours travaillés
-            const projectIndex = existingEntry.projects.findIndex(
-                (p) => p.projectId.toString() === projectId
-            );
-
-            if (projectIndex === -1) {
-                res.status(400).json({ error: "Ce projet n'est pas attribué à ce collaborateur" });
-                return;
-            }
-
-            existingEntry.projects[projectIndex].daysWorked = days;
-            await existingEntry.save();
-        } else {
-            // 🔥 Si aucune entrée n'existe pour ce mois, duplique le collaborateur et l'ajoute
-            const newCollaborator = new Collaborator({
-                name: collaborator.name,
-                projects: collaborator.projects.map(p => ({
-                    projectId: p.projectId,
-                    daysWorked: p.projectId.toString() === projectId ? days : 0
-                })),
-                month,
-                year
-            });
-
-            await newCollaborator.save();
+        if (!collaborator.workloads) {
+            collaborator.workloads = [];
         }
 
-        res.status(200).json({ message: "Jours travaillés mis à jour", collaborator });
+        const existing = collaborator.workloads.find(
+            (w) => w.projectId.toString() === projectId && w.month === month && w.year === Number(year)
+        );
+
+        if (existing) {
+            existing.daysWorked = days;
+        } else {
+            collaborator.workloads.push({
+                projectId: new mongoose.Types.ObjectId(projectId),
+                daysWorked: days,
+                month,
+                year: Number(year),
+            });
+        }
+
+        await collaborator.save();
+        res.status(200).json({ message: "Jours mis à jour", collaborator });
     } catch (error) {
         console.error("Erreur serveur :", error);
         res.status(500).json({ error: "Erreur interne du serveur", details: error });
     }
 };
 
-// Supprimer un collaborateur
 export const deleteCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const deletedCollaborator = await Collaborator.findByIdAndDelete(req.params.id);
@@ -208,8 +202,6 @@ export const deleteCollaborator = async (req: Request, res: Response, next: Next
     }
 };
 
-
-// ✅ Mettre à jour un commentaire
 export const updateCollaboratorComment = async (req: Request, res: Response): Promise<void> => {
     try {
         const { comments } = req.body;
@@ -218,7 +210,7 @@ export const updateCollaboratorComment = async (req: Request, res: Response): Pr
         const collaborator = await Collaborator.findById(id);
         if (!collaborator) {
             res.status(404).json({ error: "Collaborateur non trouvé" });
-            return
+            return;
         }
 
         collaborator.comments = comments;
