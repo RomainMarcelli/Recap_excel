@@ -38,9 +38,9 @@ function Collaborateurs() {
         try {
             const response = await fetch(`http://localhost:5000/collaborators?month=${month}&year=${year}`);
             if (!response.ok) throw new Error("Erreur lors de la récupération des collaborateurs");
-    
+
             const data = await response.json();
-    
+
             // ✅ Transformation des données pour bien récupérer les jours travaillés du bon mois
             const updatedCollaborators = data.map((collab: Collaborator) => ({
                 ...collab,
@@ -50,12 +50,12 @@ function Collaborateurs() {
                 })),
                 totalDaysWorked: collab.projects.reduce((total, p) => total + (p.daysWorked ?? 0), 0), // ✅ Calcule correctement le total
             }));
-    
+
             setCollaborators(updatedCollaborators);
         } catch (error) {
             console.error("Erreur lors du chargement des collaborateurs :", error);
         }
-    };    
+    };
 
     const fetchProjects = async () => {
         const response = await fetch("http://localhost:5000/projects");
@@ -122,40 +122,28 @@ function Collaborateurs() {
 
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
-            {/* Bouton Nombre de jours travaillés */}
-            <button
-                onClick={toggleShowCollaborators}
-                className="mb-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
-            >
-                {showOnlyCollaborators ? "Revenir à l'affichage normal" : "Nombre de jours travaillés"}
-            </button>
-            {/* <div className="mb-4">
-                <label className="block text-gray-700 mb-2">Sélectionner un mois :</label>
-                <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full border border-gray-300 p-2 rounded-md"
-                >
-                    {months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                            {month.label}
-                        </option>
-                    ))}
-                </select>
-            </div> */}
 
-            {/* Affichage uniquement de la liste des collaborateurs */}
+            {/* 🟦 Bouton pour afficher les jours travaillés */}
+            <motion.button
+                onClick={toggleShowCollaborators}
+                whileTap={{ scale: 0.95 }}
+                className="mb-6 bg-blue-500 text-white px-5 py-2.5 rounded-full hover:bg-blue-600 transition-all duration-200 flex items-center justify-center shadow-md border border-blue-700"
+            >
+                {showOnlyCollaborators ? "🔄 Revenir à l'affichage normal" : "📅 Nombre de jours travaillés"}
+            </motion.button>
+
+            {/* 🟠 Affichage de la liste des collaborateurs OU des projets */}
             {showOnlyCollaborators ? (
                 <CollaboratorList
                     collaborators={collaborators.map((collab) => ({
                         ...collab,
                         projects: collab.projects.map((p) => ({
-                            projectId: p.projectId, // ✅ Correction : garder `projectId`
-                            daysWorked: p.daysWorked ?? 0, // ✅ Ajouter `daysWorked`
+                            projectId: p.projectId,
+                            daysWorked: p.daysWorked ?? 0,
                         })),
                         totalDaysWorked: collab.totalDaysWorked ?? 0,
                     }))}
-                        fetchCollaborators={fetchCollaborators}
+                    fetchCollaborators={fetchCollaborators}
                     selectedMonth={selectedMonth}
                     setSelectedMonth={setSelectedMonth}
                     currentYear={currentYear}
@@ -163,32 +151,37 @@ function Collaborateurs() {
                 />
             ) : (
                 <>
-                    {/* Formulaire d'ajout */}
+                    {/* 🟢 Formulaire d'ajout */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg"
+                        className="bg-white shadow-lg rounded-xl p-6 w-full max-w-lg border border-gray-300"
                     >
                         <h1 className="text-3xl font-bold text-blue-600 mb-4 text-center">
-                            Gérer les Collaborateurs
+                            👥 Gérer les Collaborateurs
                         </h1>
 
+                        {/* 🟠 Champ pour entrer le nom du collaborateur */}
                         <div className="mb-4">
                             <input
                                 type="text"
-                                placeholder="Nom du collaborateur"
+                                placeholder="Entrez le nom du collaborateur"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full border border-gray-300 p-3 rounded-md focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
+                        {/* 🟦 Sélection des projets */}
                         <div className="mb-4">
-                            <label className="block text-gray-700 mb-2">Sélectionner des projets :</label>
-                            <div className="grid grid-cols-2 gap-2 bg-white p-4 rounded-md shadow-md border border-gray-300">
+                            <label className="block text-gray-700 font-semibold mb-2">Sélectionner des projets :</label>
+                            <div className="grid grid-cols-2 gap-2 bg-white p-4 rounded-lg shadow-md border border-gray-300">
                                 {projects.map((project) => (
-                                    <label key={project._id} className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md hover:bg-gray-200 cursor-pointer">
+                                    <label
+                                        key={project._id}
+                                        className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md hover:bg-gray-200 cursor-pointer"
+                                    >
                                         <input
                                             type="checkbox"
                                             value={project._id}
@@ -208,108 +201,130 @@ function Collaborateurs() {
                             </div>
                         </div>
 
+                        {/* 🟢 Bouton Ajouter Collaborateur */}
                         <motion.button
                             onClick={addCollaborator}
                             whileTap={{ scale: 0.95 }}
-                            className="w-full bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition"
+                            className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition"
                         >
-                            Ajouter Collaborateur
+                            ➕ Ajouter Collaborateur
                         </motion.button>
                     </motion.div>
 
-                    {/* Liste des collaborateurs */}
-                    <div className="mt-6 w-full max-w-lg">
-                        <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
+                    {/* 🟣 Liste des collaborateurs */}
+                    <div className="mt-6 w-full max-w-3xl">
+                        <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center border-b pb-2">
                             Liste des Collaborateurs
                         </h2>
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-6">
                             {collaborators.map((collab) => (
                                 <motion.div
                                     key={collab._id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.3 }}
-                                    className="bg-white shadow-md rounded-lg p-4 border border-gray-200 flex justify-between items-center"
+                                    className="bg-white shadow-md rounded-lg p-6 border border-gray-300"
                                 >
-                                    <div className="w-full">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                                         {editingCollaborator === collab._id ? (
-                                            <>
-                                                {/* Modifier le nom */}
+                                            <div className="w-full">
+                                                {/* Modifier le nom du collaborateur */}
                                                 <input
                                                     type="text"
                                                     value={updatedName}
                                                     onChange={(e) => setUpdatedName(e.target.value)}
-                                                    className="w-full border border-gray-300 p-2 rounded-md mb-2"
+                                                    className="border border-gray-300 p-2 w-full rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Modifier le nom"
                                                 />
 
-                                                {/* Modifier les projets */}
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {projects.map((project) => (
-                                                        <label key={project._id} className="flex items-center">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={updatedProjects.includes(project._id)}
-                                                                onChange={(e) => {
-                                                                    if (e.target.checked) {
-                                                                        setUpdatedProjects([...updatedProjects, project._id]);
-                                                                    } else {
-                                                                        setUpdatedProjects(updatedProjects.filter((id) => id !== project._id));
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <span className="ml-2">{project.name}</span>
-                                                        </label>
-                                                    ))}
+                                                {/* Modifier les projets associés */}
+                                                <div className="mt-4">
+                                                    <h4 className="text-md font-medium text-gray-700 mb-2">Modifier les projets</h4>
+                                                    <div className="grid grid-cols-2 gap-2 bg-white p-4 rounded-lg shadow-md border border-gray-300">
+                                                        {projects.map((project) => (
+                                                            <label
+                                                                key={project._id}
+                                                                className="flex items-center space-x-2 p-2 bg-gray-100 rounded-md hover:bg-gray-200 cursor-pointer"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    value={project._id}
+                                                                    checked={updatedProjects.includes(project._id)}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setUpdatedProjects([...updatedProjects, project._id]);
+                                                                        } else {
+                                                                            setUpdatedProjects(updatedProjects.filter((id) => id !== project._id));
+                                                                        }
+                                                                    }}
+                                                                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                                                />
+                                                                <span className="text-gray-700">{project.name}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
                                                 </div>
+                                            </div>
+                                        ) : (
+                                            <h3 className="text-lg font-semibold text-gray-900">{collab.name}</h3>
+                                        )}
 
-                                                {/* Boutons de validation */}
-                                                <div className="flex justify-end mt-2 space-x-2">
-                                                    <button onClick={() => updateCollaborator(collab._id)} className="bg-green-500 text-white px-3 py-1 rounded-md">
+                                        <div className="flex space-x-2 mt-3 md:mt-0">
+                                            {editingCollaborator === collab._id ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => updateCollaborator(collab._id)}
+                                                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                                                    >
                                                         Valider
                                                     </button>
-                                                    <button onClick={cancelEditing} className="bg-gray-500 text-white px-3 py-1 rounded-md">
+                                                    <button
+                                                        onClick={cancelEditing}
+                                                        className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+                                                    >
                                                         Annuler
                                                     </button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {/* Affichage du nom et des projets */}
-                                                <h3 className="text-lg font-semibold">{collab.name}</h3>
-                                                <div className="mt-2 flex flex-wrap gap-2">
-                                                    {collab.projects.length > 0 ? (
-                                                        collab.projects.map((project) => (
-                                                            <span
-                                                                key={project.projectId?._id || Math.random()} // ✅ Ajout d’une `key` de secours
-                                                                className="bg-blue-100 text-blue-700 text-sm font-medium px-3 py-1 rounded-full"
-                                                            >
-                                                                {project.projectId?.name || "Projet inconnu"} - {project.daysWorked ?? 0} jours
-                                                            </span>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-gray-500 text-sm">Aucun projet attribué</span>
-                                                    )}
-                                                </div>
-
-
-                                            </>
-                                        )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => startEditing(collab)}
+                                                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition"
+                                                    >
+                                                        Modifier
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteCollaborator(collab._id)}
+                                                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                                                    >
+                                                        Supprimer
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Boutons Modifier et Supprimer */}
-                                    <div className="flex space-x-2">
-                                        {editingCollaborator === collab._id ? null : (
-                                            <>
-                                                <button onClick={() => startEditing(collab)} className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 transition">
-                                                    Modifier
-                                                </button>
-                                                <button onClick={() => deleteCollaborator(collab._id)} className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition">
-                                                    Supprimer
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
+                                    {/* Affichage des projets associés */}
+                                    {editingCollaborator !== collab._id && (
+                                        <div className="border-t mt-4 pt-4">
+                                            <h4 className="text-md font-medium text-gray-700 mb-3">Projets associés</h4>
+                                            {collab.projects.length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {collab.projects.map((project) => (
+                                                        <span
+                                                            key={project.projectId?._id || Math.random()}
+                                                            className="bg-blue-100 text-blue-700 text-sm font-medium px-4 py-2 rounded-md border border-blue-300 shadow-sm"
+                                                        >
+                                                            {project.projectId?.name || "Projet inconnu"} - {project.daysWorked ?? 0} jours
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-500 text-sm">Aucun projet attribué</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </motion.div>
                             ))}
                         </div>
