@@ -85,4 +85,4 @@ Pour le moment, l'application ne gère pas d'authentification. Une future versio
 
 ## Auteur
 
-Développé par **[Romain MARCELLI]**
+Développé par **Romain MARCELLI**
