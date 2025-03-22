@@ -12,24 +12,51 @@ const getCurrentMonth = (): string => {
 const getCurrentYear = (): number => {
     return new Date().getFullYear();
 };
-
 export const getCollaboratorById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { id } = req.params;
+        const { month, year } = req.query;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             res.status(400).json({ error: "ID invalide" });
             return;
         }
 
-        const collaborator = await Collaborator.findById(id).populate("projects.projectId").populate("workloads.projectId");
+        const collaborator = await Collaborator.findById(id)
+            .populate("projects.projectId")
+            .populate("workloads.projectId");
 
         if (!collaborator) {
             res.status(404).json({ error: "Collaborateur non trouvé" });
             return;
         }
 
-        res.status(200).json(collaborator);
+        const filteredWorkloads = collaborator.workloads?.filter(
+            (w) => w.month === month && w.year === Number(year)
+        ) || [];
+
+        const projectsWithDays = collaborator.projects.map((p) => {
+            const projectIdStr = (p.projectId as any)._id?.toString?.() || p.projectId?.toString?.();
+            const workload = filteredWorkloads.find((w) => {
+                const workloadProjectIdStr = (w.projectId as any)._id?.toString?.() || w.projectId?.toString?.();
+                return workloadProjectIdStr === projectIdStr;
+            });
+
+            return {
+                projectId: p.projectId,
+                daysWorked: workload?.daysWorked || 0,
+            };
+        });
+
+        const monthComment = filteredWorkloads.find(w => w.comments)?.comments || "";
+
+        res.status(200).json({
+            _id: collaborator._id,
+            name: collaborator.name,
+            tjm: collaborator.tjm,
+            comments: monthComment,
+            projects: projectsWithDays,
+        });
     } catch (error) {
         console.error("Erreur lors de la récupération du collaborateur :", error);
         res.status(500).json({ error: "Erreur interne du serveur" });

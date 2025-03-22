@@ -42,7 +42,9 @@ function CollaborateurDetail() {
     const [editingComment, setEditingComment] = useState<boolean>(false);
 
     useEffect(() => {
-        fetch(`http://localhost:5000/collaborators/${id}?month=${selectedMonth}`)
+        const currentYear = new Date().getFullYear();
+
+        fetch(`http://localhost:5000/collaborators/${id}?month=${selectedMonth}&year=${currentYear}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Collaborateur non trouvé");
@@ -51,7 +53,7 @@ function CollaborateurDetail() {
             })
             .then((data) => {
                 setCollaborator(data);
-                setCommentText(data.comments || ""); // Initialisation du commentaire
+                setCommentText(data.comments || "");
             })
             .catch((error) => {
                 console.error("Erreur de chargement :", error);
@@ -61,21 +63,25 @@ function CollaborateurDetail() {
 
     const saveComment = async () => {
         if (!collaborator) return;
-
+      
         try {
-            await fetch(`http://localhost:5000/collaborators/${collaborator._id}/comment`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ comments: commentText }),
-            });
-
-            // Mise à jour instantanée
-            setCollaborator((prev) => (prev ? { ...prev, comments: commentText } : prev));
-            setEditingComment(false);
+          await fetch(`http://localhost:5000/collaborators/${collaborator._id}/comment`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              comments: commentText,
+              month: selectedMonth,
+              year: new Date().getFullYear() // ou stocke selectedYear dans le state si tu veux le gérer manuellement
+            }),
+          });
+      
+          // Mise à jour locale du commentaire affiché
+          setCollaborator((prev) => (prev ? { ...prev, comments: commentText } : prev));
+          setEditingComment(false);
         } catch (error) {
-            console.error("Erreur lors de la mise à jour du commentaire :", error);
+          console.error("Erreur lors de la mise à jour du commentaire :", error);
         }
-    };
+      };      
 
     if (error) {
         return <p className="text-center text-red-600 font-semibold">{error}</p>;
@@ -93,8 +99,8 @@ function CollaborateurDetail() {
             <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-3xl">
                 <h1 className="text-3xl font-bold text-blue-600 text-center mb-4">{collaborator.name}</h1>
 
-                 {/* Sélection du mois */}
-                 <div className="mt-6 mb-6">
+                {/* Sélection du mois */}
+                <div className="mt-6 mb-6">
                     <label className="block text-gray-700 font-medium">📅 Voir les projets d'un autre mois :</label>
                     <select
                         value={selectedMonth}
@@ -123,7 +129,7 @@ function CollaborateurDetail() {
                         <p className="text-lg font-semibold">{totalDaysWorked} jours</p>
                     </div>
                     <div className="bg-purple-100 p-4 rounded-md shadow">
-                        <p className="text-gray-700 font-medium">💶 TJM Total:</p>
+                        <p className="text-gray-700 font-medium">💶 Coût Total</p>
                         <p className="text-lg font-semibold">
                             {collaborator.tjm ? `${tjmTotal.toLocaleString()} €` : "Non défini"}
                         </p>
