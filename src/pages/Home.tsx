@@ -96,8 +96,12 @@ function Home() {
       await fetch(`http://localhost:5000/collaborators/${id}/comment`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comments: commentText[id] }),
-      });
+        body: JSON.stringify({
+          comments: commentText[id],
+          month: selectedMonth,
+          year: selectedYear
+        }),
+      });      
 
       setCollaborators((prev) =>
         prev.map((collab) =>
@@ -194,13 +198,19 @@ function Home() {
                 <td className="p-4 border text-gray-500 italic">
                   {editingCommentId === collab._id ? (
                     <input
-                      type="text"
-                      value={commentText[collab._id] || ""}
-                      onChange={(e) => setCommentText({ ...commentText, [collab._id]: e.target.value })}
-                      onBlur={() => saveComment(collab._id)}
-                      className="w-full border p-1 rounded-md"
-                      autoFocus
-                    />
+                    type="text"
+                    value={commentText[collab._id] || ""}
+                    onChange={(e) => setCommentText({ ...commentText, [collab._id]: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        saveComment(collab._id);
+                      }
+                    }}
+                    onBlur={() => saveComment(collab._id)}
+                    className="w-full border p-1 rounded-md"
+                    autoFocus
+                  />                  
                   ) : (
                     <span onDoubleClick={() => setEditingCommentId(collab._id)}>
                       {collab.comments || "Double-cliquez pour ajouter"}

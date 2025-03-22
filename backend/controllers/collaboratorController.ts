@@ -22,7 +22,7 @@ export const getCollaboratorById = async (req: Request, res: Response, next: Nex
             return;
         }
 
-        const collaborator = await Collaborator.findById(id).populate("projects.projectId");
+        const collaborator = await Collaborator.findById(id).populate("projects.projectId").populate("workloads.projectId");
 
         if (!collaborator) {
             res.status(404).json({ error: "Collaborateur non trouvé" });
@@ -60,13 +60,16 @@ export const getCollaborators = async (req: Request, res: Response, next: NextFu
                 return {
                     ...p,
                     daysWorked: workload?.daysWorked || 0,
-                    projectId: p.projectId, // on garde bien le projet peuplé
+                    projectId: p.projectId,
                 };
             });
+
+            const monthComment = filteredWorkloads.find(w => w.comments)?.comments || "";
 
             return {
                 ...collab.toObject(),
                 projects: projectsWithDays,
+                comments: monthComment,
             };
         });
 
@@ -77,10 +80,9 @@ export const getCollaborators = async (req: Request, res: Response, next: NextFu
     }
 };
 
-
 export const addCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, projects } = req.body;
+        const { name, projects, tjm  } = req.body;
 
         const existingProjects = await Project.find({ _id: { $in: projects } });
         if (existingProjects.length !== projects.length) {
@@ -95,7 +97,8 @@ export const addCollaborator = async (req: Request, res: Response, next: NextFun
 
         const newCollaborator = new Collaborator({
             name,
-            projects: formattedProjects
+            projects: formattedProjects,
+            tjm: tjm || null, // ✅ Utilise bien le TJM ici
         });
 
         await newCollaborator.save();
@@ -110,7 +113,7 @@ export const addCollaborator = async (req: Request, res: Response, next: NextFun
 
 export const updateCollaborator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { name, projects } = req.body;
+        const { name, projects, tjm  } = req.body;
 
         const existingProjects = await Project.find({ _id: { $in: projects } });
         if (existingProjects.length !== projects.length) {
@@ -134,7 +137,7 @@ export const updateCollaborator = async (req: Request, res: Response, next: Next
 
         const updatedCollaborator = await Collaborator.findByIdAndUpdate(
             req.params.id,
-            { name, projects: updatedProjects },
+            { name, projects: updatedProjects, tjm },
             { new: true }
         ).populate("projects.projectId");
 
@@ -204,7 +207,7 @@ export const deleteCollaborator = async (req: Request, res: Response, next: Next
 
 export const updateCollaboratorComment = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { comments } = req.body;
+        const { comments, month, year } = req.body;
         const { id } = req.params;
 
         const collaborator = await Collaborator.findById(id);
@@ -213,9 +216,23 @@ export const updateCollaboratorComment = async (req: Request, res: Response): Pr
             return;
         }
 
-        collaborator.comments = comments;
-        await collaborator.save();
+        const workloadComment = collaborator.workloads?.find(
+            (w) => w.month === month && w.year === Number(year)
+        );
 
+        if (workloadComment) {
+            (workloadComment as any).comments = comments;
+        } else {
+            collaborator.workloads?.push({
+                projectId: new mongoose.Types.ObjectId(), // Placeholder ID
+                daysWorked: 0,
+                month,
+                year: Number(year),
+                comments,
+            } as any);
+        }
+
+        await collaborator.save();
         res.status(200).json({ message: "Commentaire mis à jour", collaborator });
     } catch (error) {
         res.status(500).json({ error: "Erreur serveur", details: error });

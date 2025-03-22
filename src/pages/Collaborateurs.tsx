@@ -10,12 +10,14 @@ interface Project {
 interface Collaborator {
     _id: string;
     name: string;
-    totalDaysWorked: number; // ✅ Ce champ doit exister
+    totalDaysWorked: number;
+    tjm?: number; // ✅ Ajoute cette ligne
     projects: {
         projectId: Project;
         daysWorked: number;
-    }[]; // ✅ Correction
+    }[];
 }
+
 
 function Collaborateurs() {
     const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -28,6 +30,8 @@ function Collaborateurs() {
     const [showOnlyCollaborators, setShowOnlyCollaborators] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(5, 7));
     const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
+    const [updatedTjm, setUpdatedTjm] = useState<number | "">("");
+    const [tjm, setTjm] = useState<number | "">("");
 
     useEffect(() => {
         fetchCollaborators(selectedMonth, currentYear);
@@ -74,6 +78,7 @@ function Collaborateurs() {
                 projects: formattedProjects, // ✅ Correction ici
                 month: selectedMonth,
                 year: currentYear,
+                tjm: tjm === "" ? null : tjm, // ✅ Envoie le TJM ici !
             }),
         });
 
@@ -81,6 +86,7 @@ function Collaborateurs() {
             fetchCollaborators(selectedMonth, currentYear); // ✅ Met à jour la liste avec le bon mois
             setName("");
             setSelectedProjects([]);
+            setTjm(""); // ✅ Réinitialise aussi le champ TJM après ajout
         }
     };
 
@@ -93,6 +99,7 @@ function Collaborateurs() {
         setEditingCollaborator(collab._id);
         setUpdatedName(collab.name);
         setUpdatedProjects(collab.projects.map((p) => p.projectId?._id || "")); // ✅ Vérification si `projectId` est défini
+        setUpdatedTjm(collab.tjm ?? "");
     };
 
     const cancelEditing = () => {
@@ -108,6 +115,7 @@ function Collaborateurs() {
                 projects: updatedProjects,
                 month: selectedMonth,  // ✅ Ajout du mois sélectionné
                 year: currentYear,      // ✅ Ajout de l'année sélectionnée
+                tjm: updatedTjm === "" ? null : updatedTjm, // ✅ ajoute ça
             }),
         });
 
@@ -122,7 +130,6 @@ function Collaborateurs() {
 
     return (
         <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
-
             {/* 🟦 Bouton pour afficher les jours travaillés */}
             <motion.button
                 onClick={toggleShowCollaborators}
@@ -201,6 +208,18 @@ function Collaborateurs() {
                             </div>
                         </div>
 
+                        {/* 🔵 Saisie du TJM */}
+                        <div className="mb-6">
+                            <label className="block text-gray-700 font-semibold mb-2">TJM (€)</label>
+                            <input
+                                type="number"
+                                value={tjm}
+                                onChange={(e) => setTjm(Number(e.target.value))}
+                                placeholder="Ex: 500"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
                         {/* 🟢 Bouton Ajouter Collaborateur */}
                         <motion.button
                             onClick={addCollaborator}
@@ -238,6 +257,18 @@ function Collaborateurs() {
                                                     placeholder="Modifier le nom"
                                                 />
 
+                                                {/* Champ pour modifier le TJM */}
+                                                <div className="mt-4">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">TJM (€)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={updatedTjm}
+                                                        onChange={(e) => setUpdatedTjm(Number(e.target.value))}
+                                                        className="w-full border border-gray-300 p-2 rounded-lg"
+                                                        placeholder="Ex: 600"
+                                                    />
+                                                </div>
+
                                                 {/* Modifier les projets associés */}
                                                 <div className="mt-4">
                                                     <h4 className="text-md font-medium text-gray-700 mb-2">Modifier les projets</h4>
@@ -267,7 +298,13 @@ function Collaborateurs() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <h3 className="text-lg font-semibold text-gray-900">{collab.name}</h3>
+                                            <>
+                                                <h3 className="text-lg font-semibold text-gray-900">{collab.name}</h3>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    <span className="font-medium text-gray-700">TJM : </span>
+                                                    {collab.tjm ? `${collab.tjm} €` : "Non défini"}
+                                                </p>
+                                            </>
                                         )}
 
                                         <div className="flex space-x-2 mt-3 md:mt-0">
@@ -333,6 +370,7 @@ function Collaborateurs() {
             )}
         </div>
     );
+    ;
 
 }
 export default Collaborateurs;

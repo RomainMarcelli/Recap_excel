@@ -8,11 +8,13 @@ interface IProject {
 
 // ✅ Interface pour les jours travaillés par mois/année
 interface WorkByMonth {
-  projectId: Types.ObjectId;
-  daysWorked: number;
-  month: string;
-  year: number;
-}
+    projectId: Types.ObjectId;
+    daysWorked: number;
+    month: string;
+    year: number;
+    comments?: string; // ✅ Ajout ici
+  }
+  
 
 // ✅ Interface principale
 export interface ICollaborator extends Document {
@@ -40,10 +42,10 @@ const CollaboratorSchema = new Schema<ICollaborator>({
       daysWorked: { type: Number, default: 0 },
       month: { type: String, required: true },
       year: { type: Number, required: true },
+      comments: { type: String, default: "" },
     },
   ],
   tjm: { type: Number, default: null },
-  comments: { type: String, default: "" },
 });
 
 console.log("🔵 Modèle Collaborator chargé avec succès.");
