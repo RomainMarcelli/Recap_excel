@@ -1,46 +1,88 @@
-# Getting Started with Create React App
+# Collaborateurs & Projets – Gestion des Jours Travaillés & TJM
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Description
 
-## Available Scripts
+Cette application web permet de **gérer les collaborateurs** d'une entreprise ainsi que leur **temps de travail** mensuel sur différents projets. Elle offre également la possibilité d'attribuer un **TJM (Taux Journalier Moyen)** à chaque collaborateur pour estimer les coûts projetés par mois.
 
-In the project directory, you can run:
+Elle est conçue pour :
+- Suivre les **jours travaillés par projet et par mois**.
+- Ajouter, modifier et supprimer des collaborateurs.
+- Attribuer un ou plusieurs projets à chaque collaborateur.
+- Définir et mettre à jour un **TJM** pour chaque personne.
+- Ajouter des **commentaires mensuels** liés à l'activité du collaborateur.
+- Consulter un **bilan mensuel détaillé** pour chaque collaborateur.
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Technologies Utilisées
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Frontend
+- **React** (avec Hooks)
+- **TypeScript**
+- **Tailwind CSS** – pour un design responsive rapide
+- **Framer Motion** – pour les animations douces
+- **React Toastify** – notifications toast
 
-### `npm test`
+### Backend
+- **Node.js** avec **Express.js**
+- **MongoDB** – base de données NoSQL pour stocker collaborateurs, projets et charges
+- **Mongoose** – ODM pour MongoDB
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## Fonctionnalités Clés
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Vue mensuelle** des jours travaillés par collaborateur
+- **Ajout de nouveaux collaborateurs** avec sélection de projets et TJM
+- **Modification en ligne** des projets, noms et TJM
+- **Filtrage par mois & année**
+- **Commentaires personnalisés** par collaborateur et par mois
+- **Calcul automatique** du TJM total pour le mois
+- **Suppression** d’un collaborateur
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Structure Principale
 
-### `npm run eject`
+```
+/src
+  └── components/
+  └── pages/
+  └── App.tsx
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+/backend
+  └── controllers/
+  └── models/
+  └── routes/
+  └── server.ts
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🚀 Lancement de l'application
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### 1. Backend
+```bash
+cd backend
+npm install
+npm start
+```
 
-## Learn More
+### 2. Frontend
+```bash
+cd src
+npm install
+npm start
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Authentification
+
+Pour le moment, l'application ne gère pas d'authentification. Une future version pourra intégrer une couche de sécurité via JWT ou OAuth2.
+
+---
+
+## Auteur
+
+Développé par **Romain MARCELLI**
