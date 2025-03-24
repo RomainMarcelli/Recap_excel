@@ -19,7 +19,7 @@ function TJM() {
 
     const fetchCollaborators = async () => {
         try {
-            const response = await fetch("https://deploiement-recapexcel.onrender.com/api/tjm");
+            const response = await fetch("http://localhost:5000/api/tjm");
             if (!response.ok) throw new Error("Erreur lors de la récupération des collaborateurs");
             const data = await response.json();
             setCollaborators(data);
@@ -32,7 +32,7 @@ function TJM() {
         if (!selectedCollaborator || tjm === "") return;
 
         try {
-            const response = await fetch(`https://deploiement-recapexcel.onrender.com/api/tjm/${selectedCollaborator}/update-tjm`, {
+            const response = await fetch(`http://localhost:5000/api/tjm/${selectedCollaborator}/update-tjm`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ tjm }),

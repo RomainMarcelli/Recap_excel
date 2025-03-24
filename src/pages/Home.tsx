@@ -80,7 +80,7 @@ function Home() {
   };
 
   useEffect(() => {
-    fetch(`https://deploiement-recapexcel.onrender.com/collaborators?month=${selectedMonth}&year=${selectedYear}`)
+    fetch(`http://localhost:5000/collaborators?month=${selectedMonth}&year=${selectedYear}`)
       .then((response) => response.json())
       .then((data) => setCollaborators(data))
       .catch((error) => console.error("Erreur lors du chargement :", error));
@@ -93,7 +93,7 @@ function Home() {
     }
 
     try {
-      await fetch(`https://deploiement-recapexcel.onrender.com/collaborators/${id}/comment`, {
+      await fetch(`http://localhost:5000/collaborators/${id}/comment`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,7 +101,7 @@ function Home() {
           month: selectedMonth,
           year: selectedYear
         }),
-      });      
+      });
 
       setCollaborators((prev) =>
         prev.map((collab) =>
@@ -198,19 +198,19 @@ function Home() {
                 <td className="p-4 border text-gray-500 italic">
                   {editingCommentId === collab._id ? (
                     <input
-                    type="text"
-                    value={commentText[collab._id] || ""}
-                    onChange={(e) => setCommentText({ ...commentText, [collab._id]: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        saveComment(collab._id);
-                      }
-                    }}
-                    onBlur={() => saveComment(collab._id)}
-                    className="w-full border p-1 rounded-md"
-                    autoFocus
-                  />                  
+                      type="text"
+                      value={commentText[collab._id] || ""}
+                      onChange={(e) => setCommentText({ ...commentText, [collab._id]: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          saveComment(collab._id);
+                        }
+                      }}
+                      onBlur={() => saveComment(collab._id)}
+                      className="w-full border p-1 rounded-md"
+                      autoFocus
+                    />
                   ) : (
                     <span onDoubleClick={() => setEditingCommentId(collab._id)}>
                       {collab.comments || "Double-cliquez pour ajouter"}

@@ -44,7 +44,7 @@ function CollaborateurDetail() {
     useEffect(() => {
         const currentYear = new Date().getFullYear();
 
-        fetch(`https://deploiement-recapexcel.onrender.com/collaborators/${id}?month=${selectedMonth}&year=${currentYear}`)
+        fetch(`http://localhost:5000/collaborators/${id}?month=${selectedMonth}&year=${currentYear}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Collaborateur non trouvé");
@@ -65,7 +65,7 @@ function CollaborateurDetail() {
         if (!collaborator) return;
       
         try {
-          await fetch(`https://deploiement-recapexcel.onrender.com/collaborators/${collaborator._id}/comment`, {
+          await fetch(`http://localhost:5000/collaborators/${collaborator._id}/comment`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

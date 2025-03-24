@@ -39,7 +39,7 @@ function Recap() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`https://deploiement-recapexcel.onrender.com/projects/recap?year=${selectedYear}`);
+        const res = await fetch(`http://localhost:5000/projects/recap?year=${selectedYear}`);
         const data = await res.json();
         console.log("✅ Données récupérées:", data);
 

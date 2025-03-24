@@ -42,7 +42,7 @@ function Collaborateurs() {
 
     const fetchCollaborators = async (month = selectedMonth, year = currentYear) => {
         try {
-            const response = await fetch(`https://deploiement-recapexcel.onrender.com/collaborators?month=${month}&year=${year}`);
+            const response = await fetch(`http://localhost:5000/collaborators?month=${month}&year=${year}`);
             if (!response.ok) throw new Error("Erreur lors de la récupération des collaborateurs");
 
             const data = await response.json();
@@ -64,7 +64,7 @@ function Collaborateurs() {
     };
 
     const fetchProjects = async () => {
-        const response = await fetch("https://deploiement-recapexcel.onrender.com/projects");
+        const response = await fetch("http://localhost:5000/projects");
         const data = await response.json();
         setProjects(data);
     };
@@ -72,7 +72,7 @@ function Collaborateurs() {
     const addCollaborator = async () => {
         const formattedProjects = selectedProjects.map((id) => id); // 🔥 On envoie uniquement des strings
 
-        const response = await fetch("https://deploiement-recapexcel.onrender.com/collaborators", {
+        const response = await fetch("http://localhost:5000/collaborators", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -95,7 +95,7 @@ function Collaborateurs() {
     };
 
     const deleteCollaborator = async (id: string) => {
-        await fetch(`https://deploiement-recapexcel.onrender.com/collaborators/${id}`, { method: "DELETE" });
+        await fetch(`http://localhost:5000/collaborators/${id}`, { method: "DELETE" });
         fetchCollaborators(selectedMonth, currentYear);
         toast.success("Collaborateur supprimé");
     };
@@ -112,7 +112,7 @@ function Collaborateurs() {
     };
 
     const updateCollaborator = async (id: string) => {
-        await fetch(`https://deploiement-recapexcel.onrender.com/collaborators/${id}`, {
+        await fetch(`http://localhost:5000/collaborators/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

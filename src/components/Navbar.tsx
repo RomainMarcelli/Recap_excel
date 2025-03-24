@@ -1,6 +1,17 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Navbar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Suppression du token dans le localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+
+    // Redirection vers la page de connexion
+    navigate("/login");
+  };
+
   return (
     <nav className="bg-blue-500 p-4 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
@@ -8,7 +19,7 @@ function Navbar() {
         
         <ul className="flex space-x-6">
           <li>
-            <Link to="/" className="text-white hover:text-gray-300 hover:underline">Accueil</Link>
+            <Link to="/home" className="text-white hover:text-gray-300 hover:underline">Accueil</Link>
           </li>
           <li>
             <Link to="/recap" className="text-white hover:text-gray-300 hover:underline">Récapitulatif</Link>
@@ -21,6 +32,14 @@ function Navbar() {
           </li>
           <li>
             <Link to="/tjm" className="text-white hover:text-gray-300 hover:underline">TJM</Link>
+          </li>
+          <li>
+            <button
+              onClick={handleLogout}
+              className="text-white hover:text-gray-300 hover:underline"
+            >
+              Déconnexion
+            </button>
           </li>
         </ul>
       </div>
