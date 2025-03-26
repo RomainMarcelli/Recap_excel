@@ -34,6 +34,8 @@ function Collaborateurs() {
     const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
     const [updatedTjm, setUpdatedTjm] = useState<number | "">("");
     const [tjm, setTjm] = useState<number | "">("");
+    const [searchTerm, setSearchTerm] = useState("");
+
 
     useEffect(() => {
         fetchCollaborators(selectedMonth, currentYear);
@@ -250,7 +252,23 @@ function Collaborateurs() {
                         </h2>
 
                         <div className="space-y-6">
-                            {collaborators.map((collab) => (
+                            <div className="mb-4 w-full max-w-3xl">
+                                <input
+                                    type="text"
+                                    placeholder="🔍 Rechercher par nom ou projet..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            {collaborators.filter((collab) => {
+                                const nameMatch = collab.name.toLowerCase().includes(searchTerm.toLowerCase());
+                                const projectMatch = collab.projects.some((p) =>
+                                    p.projectId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                                );
+                                return nameMatch || projectMatch;
+                            }).map((collab) => (
                                 <motion.div
                                     key={collab._id}
                                     initial={{ opacity: 0, y: 10 }}
